@@ -18,7 +18,7 @@ videos_data <- read.csv("RCAC_videos_FB_Insights_CSV.csv")
 # Sign Test (One-sample)
 views = posts_data$lifetime_post_total_reach
 views_median = rep(10858, length(views)) # assumption = 10858, length(views) = count
-
+boxplot(views, horizontal = TRUE)
 views_diff = views - views_median
 
 views_rpos_len = length((views_diff[views_diff > 0]))
@@ -30,9 +30,26 @@ views_result = 2 * dbinom(views_r, views_n,1/2)
 views_result # 8.37 < 0.01 is false, do not reject the null hypothesis
 
 # Sign Test (Two-sample)
-date_posted = posts_data$date_posted
-time_posted = format(date_posted, format = "%H-%M")
-  
+engagedUsersAfternoon = sqldf("SELECT * FROM posts_data WHERE X24_hour_format BETWEEN '15:00:00' AND '18:00:00' LIMIT 30")
+engagedUsersEvening = sqldf("SELECT * FROM posts_data WHERE X24_hour_format BETWEEN '18:00:00' AND '22:00:00' LIMIT 30")
+
+diff = engagedUsersAfternoon$lifetime_engaged_users - engagedUsersEvening$lifetime_engaged_users
+diff
+rpos = length(diff[diff>0])
+rpos
+rneg = length(diff[diff<0])
+rneg
+
+r = min(rpos, rneg)
+r
+n = rpos + rneg
+n
+
+#rpos=(diff[diff>0])
+#rneg=(diff[diff<0])
+#pmin(length(rpos),length(rneg))
+
+dbinom(r, n, 1/2)
 
 # Wilcoxon Rank Sum Test
 video_posts_data = sqldf("SELECT * FROM posts_data WHERE type = 'Video'")
@@ -68,6 +85,7 @@ views_median
 wilcox.test(views,views_median, paired = FALSE, alternative = "two.sided", conf.level = 0.95)
 
 # Wilcoxon Signed Rank Sum Test (Two-sample)
+wilcox.test(engagedUsersAfternoon$lifetime_engaged_users, engagedUsersEvening$lifetime_engaged_users, paired=TRUE, exact = FALSE, conf.level = 0.95)
 
 
 # Kruskal-Wallis Test
@@ -127,7 +145,7 @@ d2 = (who_liked - who_didnt) ^ 2
 sum = sum(d2)
 r = 1-((length(who_liked)*sum)/(length(who_didnt)*(length(who_didnt)^2-1)))
 r # or
-cor.test(who_liked, who_didnt, method="spearman") # or
+cor.test(who_liked, who_didnt, method="spearman", exact=FALSE) # or
 cor(who_liked,who_didnt)
 plot(who_liked,who_didnt,xlab="Who Liked",ylab="Who Didn't Like")
 abline(lm(who_liked~who_didnt), col="red")
